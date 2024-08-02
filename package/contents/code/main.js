@@ -39,7 +39,7 @@ class GeometryChangeEffect {
         }
     }
 
-    isWindowClassExluded(windowClass) {
+    isWindowClassExcluded(windowClass) {
         for (const c of windowClass.split(" ")) {
             if (this.excludedWindowClasses.includes(c)) {
                 return true;
@@ -61,12 +61,12 @@ class GeometryChangeEffect {
             return;
         }
 
-        if (this.isWindowClassExluded(window.windowClass)) {
+        if (this.isWindowClassExcluded(window.windowClass)) {
             return;
         }
 
         const windowAgeMs = Date.now() - window.geometryChangeCreatedTime;
-        if(windowAgeMs < 10) {
+        if (windowAgeMs < 10) {
             // Some windows are moved or resized immediately after being created. We don't want to animate that.
             return;
         }
@@ -78,32 +78,70 @@ class GeometryChangeEffect {
         const heightDelta = newGeometry.height - oldGeometry.height;
         const widthRatio = oldGeometry.width / newGeometry.width;
         const heightRatio = oldGeometry.height / newGeometry.height;
+        let animations = [];
+        let translate = false;
+        let scale = false;
 
-        const animations = [
-            {
-                type: Effect.Translation,
-                from: {
-                    value1: -xDelta - widthDelta / 2,
-                    value2: -yDelta - heightDelta / 2,
+        if (xDelta !== 0 || yDelta !== 0) {
+            translate = true;
+        }
+        if (widthDelta !== 0 || heightDelta !== 0) {
+            scale = true;
+        }
+        if (translate && scale) {
+            animations = [
+                {
+                    type: Effect.Translation,
+                    from: {
+                        value1: -xDelta - widthDelta / 2,
+                        value2: -yDelta - heightDelta / 2,
+                    },
+                    to: {
+                        value1: 0,
+                        value2: 0,
+                    },
                 },
-                to: {
-                    value1: 0,
-                    value2: 0,
+                {
+                    type: Effect.Scale,
+                    from: {
+                        value1: widthRatio,
+                        value2: heightRatio,
+                    },
+                    to: {
+                        value1: 1,
+                        value2: 1,
+                    },
                 },
-            },
-            {
-                type: Effect.Scale,
-                from: {
-                    value1: widthRatio,
-                    value2: heightRatio,
+            ];
+        } else if (translate) {
+            animations = [
+                {
+                    type: Effect.Translation,
+                    from: {
+                        value1: -xDelta,
+                        value2: -yDelta,
+                    },
+                    to: {
+                        value1: 0,
+                        value2: 0,
+                    },
                 },
-                to: {
-                    value1: 1,
-                    value2: 1,
+            ];
+        } else if (scale) {
+            animations = [
+                {
+                    type: Effect.Scale,
+                    from: {
+                        value1: widthRatio,
+                        value2: heightRatio,
+                    },
+                    to: {
+                        value1: 1,
+                        value2: 1,
+                    },
                 },
-            },
-        ];
-
+            ];
+        }
         if (window.geometryChangeAnimationInstances === undefined) {
             window.geometryChangeAnimationInstances = 0;
         }
